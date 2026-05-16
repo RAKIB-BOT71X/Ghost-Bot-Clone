@@ -1,37 +1,50 @@
-name: Node.js CI
+name: Ghost Bot CI
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
+    branches: [ "main" ]
+  workflow_dispatch: # ম্যানুয়ালি গিটহাব থেকে রান করার অপশন
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [20.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-    # Step to check out the repository code
-    - uses: actions/checkout@v2
+    # ১. গিটহাব রিপোজিটরি কোড চেকআউট করা
+    - name: Checkout Repository
+      uses: actions/checkout@v3
 
-    # Step to set up the specified Node.js version
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
+    # ২. নোড জেএস সেটআপ করা (ভার্সন ২০)
+    - name: Use Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: 20.x
+        cache: 'npm'
 
-    # Step to install dependencies
+    # 🌟 ৩. অ্যানিমেশন ও জিআইএফ কমান্ড সচল করার মূল লাইব্রেরি ইনস্টল করা
+    - name: Install System Graphics Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev build-essential
+
+    # 🌟 ৪. ক্যাশ ফোল্ডার অটোমেটিক তৈরি করা (যাতে ফাইল পাথ এরর না আসে)
+    - name: Create Cache Directory
+      run: |
+        mkdir -p cache
+        mkdir -p ghost-bot/cache
+
+    # ৫. বটের ডিপেন্ডেন্সি বা প্যাকেজ ইনস্টল করা
     - name: Install dependencies
       run: npm install
 
-    # Step to run the bot with the correct port
+    # ╚═★ ৬. সিক্রেটস ভেরিয়েবল সহ বট স্টার্ট করা
     - name: Start the bot
       env:
         PORT: 8080
+        FBSTATE: ${{ secrets.FBSTATE }}
+        MONGO_URI: ${{ secrets.MONGO_URI }}
+        NODE_ENV: production
       run: npm start
       
