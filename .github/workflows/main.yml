@@ -1,40 +1,40 @@
-name: Ghost Bot CI
+name: Node.js CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
+    # Step to check out the repository code
+    - uses: actions/checkout@v2
 
-    # 🌟 ১. নোড ভার্সন ১৮ ব্যবহার করা (যা ক্যানভাসের জন্য সবচেয়ে স্টেবল)
-    - name: Use Node.js 18
-      uses: actions/setup-node@v3
+    # Step to set up the specified Node.js version
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
       with:
-        node-version: 18
-        cache: 'npm'
+        node-version: ${{ matrix.node-version }}
 
-    # 🌟 ২. সিস্টেম লাইব্রেরিগুলো সম্পূর্ণ আপডেট করে ইনস্টল করা
-    - name: Install System Graphics Dependencies
-      run: |
-        sudo apt-get update-all || sudo apt-get update
-        sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+    # Step to install dependencies
+    - name: Install dependencies
+      run: npm install
 
-    # ৩. ক্যাশ ফোল্ডার তৈরি
-    - name: Create Cache Directory
-      run: |
-        mkdir -p cache
-        mkdir -p ghost-bot/cache
-
-    # 🌟 ৪. ক্যানভাস বিল্ড এরর বাইপাস করার জন্য বিশেষ ফ্ল্যাগসহ ইনস্টলেশন
+    # Step to run the bot with the correct port
+    - name: Start the bot
+      env:
+        PORT: 8080
+      run: npm start
+          # 🌟 ৪. ক্যানভাস বিল্ড এরর বাইপাস করার জন্য বিশেষ ফ্ল্যাগসহ ইনস্টলেশন
     - name: Install dependencies
       run: |
         npm install --build-from-source=false || npm install --legacy-peer-deps
