@@ -5,41 +5,41 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: # ম্যানুয়ালি গিটহাব থেকে রান করার অপশন
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    # ১. গিটহাব রিপোজিটরি কোড চেকআউট করা
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    # ২. নোড জেএস সেটআপ করা (ভার্সন ২০)
-    - name: Use Node.js
+    # 🌟 ১. নোড ভার্সন ১৮ ব্যবহার করা (যা ক্যানভাসের জন্য সবচেয়ে স্টেবল)
+    - name: Use Node.js 18
       uses: actions/setup-node@v3
       with:
-        node-version: 20.x
+        node-version: 18
         cache: 'npm'
 
-    # 🌟 ৩. অ্যানিমেশন ও জিআইএফ কমান্ড সচল করার মূল লাইব্রেরি ইনস্টল করা
+    # 🌟 ২. সিস্টেম লাইব্রেরিগুলো সম্পূর্ণ আপডেট করে ইনস্টল করা
     - name: Install System Graphics Dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev build-essential
+        sudo apt-get update-all || sudo apt-get update
+        sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
-    # 🌟 ৪. ক্যাশ ফোল্ডার অটোমেটিক তৈরি করা (যাতে ফাইল পাথ এরর না আসে)
+    # ৩. ক্যাশ ফোল্ডার তৈরি
     - name: Create Cache Directory
       run: |
         mkdir -p cache
         mkdir -p ghost-bot/cache
 
-    # ৫. বটের ডিপেন্ডেন্সি বা প্যাকেজ ইনস্টল করা
+    # 🌟 ৪. ক্যানভাস বিল্ড এরর বাইপাস করার জন্য বিশেষ ফ্ল্যাগসহ ইনস্টলেশন
     - name: Install dependencies
-      run: npm install
+      run: |
+        npm install --build-from-source=false || npm install --legacy-peer-deps
 
-    # ╚═★ ৬. সিক্রেটস ভেরিয়েবল সহ বট স্টার্ট করা
+    # ৫. বট স্টার্ট
     - name: Start the bot
       env:
         PORT: 8080
@@ -47,4 +47,3 @@ jobs:
         MONGO_URI: ${{ secrets.MONGO_URI }}
         NODE_ENV: production
       run: npm start
-      
