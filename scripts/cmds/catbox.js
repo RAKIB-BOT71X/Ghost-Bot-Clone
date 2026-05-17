@@ -68,7 +68,7 @@ module.exports = {
     name: "catbox",
     aliases: ["ct"],
     version: "1.3",
-    author: "Rakib Islam",
+    author: "MaHU",
     countDown: 5,
     role: 0,
     shortDescription: "Upload media to catbox.moe",
