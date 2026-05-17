@@ -1,1 +1,0 @@
-Muri khao
