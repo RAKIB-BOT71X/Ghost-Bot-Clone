@@ -1,117 +1,132 @@
 /**
  * @fileoverview Goat Bot Custom Command - ACS Cyber Overlay
  * @author ACS RAKIB / Rakib Islam
- * Description: Overlays a cyber community frame onto a user-provided image.
- * Supports custom zoom parameters via reply commands.
+ * Description: Overlays the custom PNG cyber frame with accurate dynamic zoom logic.
  */
 
-const axios = require('axios');
-const { createCanvas, loadImage } = require('canvas');
-const fs = require('fs');
-const path = require('path');
+const { createCanvas, loadImage } = require("canvas");
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
-// আপনার দেওয়া প্রফেশনাল PNG ফ্রেমের ডিরেক্ট লিংক
+// আপনার দেওয়া নিখুঁত প্রফেশনাল PNG ফ্রেমের ডিরেক্ট লিংক
 const FRAME_URL = "https://i.ibb.co.com/bSkQBJn/20260517-213520.png";
 
 module.exports = {
-    config: {
-        name: "acs",
-        aliases: ["acs-mahi", "acs-rakib", "cyber", "overlay"],
-        version: "2.1.0",
-        author: "ACS RAKIB",
-        countDown: 5,
-        role: 0, // ০ = সবাই ব্যবহার করতে পারবে
-        description: "গ্রুপ চ্যাটের ছবির ওপর সাইবার ফ্রেম এবং লোগো বসানোর কমান্ড",
-        category: "image",
-        guide: "{p}{n} [ছবিতে রিপ্লাই করুন]\\nঅপশন:\\n{p}{n} zoom20%\\n{p}{n} 30%\\n{p}{n} off"
-    },
+  config: {
+    name: "acs",
+    aliases: ["acs-mahi", "acs-rakib", "cyber", "overlay"],
+    version: "3.5",
+    author: "RAKIB",
+    countDown: 5,
+    role: 0,
+    description: "ইউজারের ছবির ওপর সাইবার ফ্রেম এবং লোগো বসানোর কমান্ড (Advanced Fixed)",
+    category: "image",
+    guide: "{pn} [ছবিতে রিপ্লাই করুন] \nবিকল্প অপশন:\n{pn} zoom20%\n{pn} 30%\n{pn} off"
+  },
 
-    onStart: async function ({ message, args }) {
-        try {
-            // ১. চেক করা হচ্ছে মেসেজটি কোনো ইমেজের রিপ্লাই কিনা
-            if (message.type !== "message_reply" || !message.messageReply.attachments || message.messageReply.attachments.length === 0) {
-                return message.reply("ভুল হয়েছে! দয়া করে একটি ছবির রিপ্লাইয়ে গিয়ে কমান্ডটি লিখুন।");
-            }
+  onStart: async function ({ message, event, args }) {
+    try {
+      // --- শক্তিশালী মাল্টি-লেয়ার ইমেজ ডিটেকশন সিস্টেম (Error Fixed) ---
+      let userImageUrl = null;
 
-            const attachment = message.messageReply.attachments[0];
-            if (attachment.type !== "photo") {
-                return message.reply("এটি শুধু ইমেজ বা ছবির ওপর কাজ করবে!");
-            }
+      if (event.type === "message_reply" && event.messageReply.attachments && event.messageReply.attachments.length > 0) {
+        // প্রথম লেয়ারে ফটো খোঁজা
+        const photo = event.messageReply.attachments.find(att => att.type === "photo");
+        if (photo) userImageUrl = photo.url;
+      }
 
-            const userImageUrl = attachment.url;
-            await message.reply("Processing... আপনার ছবি তৈরি হচ্ছে, একটু অপেক্ষা করুন।");
-
-            // ২. জুম প্যারামিটার হ্যান্ডেল করা (Default: ১৫% অটো জুম)
-            let zoomPercent = 15; 
-            let disableZoom = false;
-
-            if (args.length > 0) {
-                const argInput = args[0].toLowerCase();
-                if (argInput.includes("off") || argInput.includes("zoomoff")) {
-                    disableZoom = true;
-                } else {
-                    // ইউজার 'zoom20%' বা শুধু '20%' লিখলে সংখ্যাটি বের করা
-                    const match = argInput.match(/\d+/);
-                    if (match) {
-                        zoomPercent = parseInt(match[0], 10);
-                        if (zoomPercent < 0) zoomPercent = 0;
-                        if (zoomPercent > 80) zoomPercent = 80; // ক্রপ সেফটি ক্যাপ
-                    }
-                }
-            }
-
-            // ৩. ইউজারের ছবি এবং পিএনজি ফ্রেম লোড করা
-            const [mainImage, frameImage] = await Promise.all([
-                loadImage(userImageUrl),
-                loadImage(FRAME_URL)
-            ]);
-
-            // ৪. ক্যানভাস সাইজ নির্ধারণ (১:১ রেশিও ফ্রেমের সাথে মিল রেখে)
-            const canvasSize = 1000; 
-            const canvas = createCanvas(canvasSize, canvasSize);
-            const ctx = canvas.getContext('2d');
-
-            // ৫. জুম অন/অফ লজিক অনুযায়ী ছবি ড্র করা
-            if (disableZoom) {
-                // কোনো জুম হবে না, সম্পূর্ণ ছবি ফ্রেমে বসবে
-                ctx.drawImage(mainImage, 0, 0, canvasSize, canvasSize);
-            } else {
-                // ইউজার ডেটা অনুযায়ী ছবির মাঝখানের অংশ ক্রপ করে জুম করা
-                const factor = zoomPercent / 100;
-                
-                const cropWidth = mainImage.width * (1 - factor);
-                const cropHeight = mainImage.height * (1 - factor);
-                const cropX = (mainImage.width - cropWidth) / 2;
-                const cropY = (mainImage.height - cropHeight) / 2;
-
-                ctx.drawImage(
-                    mainImage,
-                    cropX, cropY, cropWidth, cropHeight, 
-                    0, 0, canvasSize, canvasSize        
-                );
-            }
-
-            // ৬. জুম করা ছবির ঠিক উপরে আপনার লোগো ও বর্ডারসহ PNG ফ্রেমটি বসানো
-            ctx.drawImage(frameImage, 0, 0, canvasSize, canvasSize);
-
-            // ৭. ফাইনাল ইমেজ ক্যাশে সেভ করে মেসেঞ্জারে পাঠানো
-            const imageBuffer = canvas.toBuffer('image/png');
-            const tempFilePath = path.join(__dirname, `cache_acs_${Date.now()}.png`);
-            
-            fs.writeFileSync(tempFilePath, imageBuffer);
-
-            await message.reply({
-                body: `✅ সফলভাবে তৈরি হয়েছে!\\n🔍 জুম স্ট্যাটাস: ${disableZoom ? 'বন্ধ (Off)' : zoomPercent + '%'}`,
-                attachment: fs.createReadStream(tempFilePath)
-            });
-
-            // ক্যাশ ফাইলটি ডিলিট করে দেওয়া
-            fs.unlinkSync(tempFilePath);
-
-        } catch (error) {
-            console.error("ACS Command Error:", error);
-            return message.reply("ছবিটি প্রসেস করার সময় একটি সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।");
+      // যদি কোন কারণে মেসেঞ্জার বা এফসিএ অবজেক্ট শিফট করে (সেফটি ফলব্যাক)
+      if (!userImageUrl && event.messageReply && event.messageReply.attachments) {
+        if (event.messageReply.attachments[0] && event.messageReply.attachments[0].url) {
+          userImageUrl = event.messageReply.attachments[0].url;
         }
+      }
+
+      // ইমেজ ইউআরএল না পাওয়া গেলে এরর মেসেজ
+      if (!userImageUrl) {
+        return message.reply("⚠️ Are boss ekta image e to reply dao 😉");
+      }
+
+      await message.reply("⏳ Processing... iam creating your image in sleeping mode 🐸");
+
+      // --- জুম সেটিংস হ্যান্ডলিং লজিক ---
+      let zoomPercent = 15; // ডিফল্ট অটো জুম ১৫%
+      let disableZoom = false;
+
+      if (args.length > 0) {
+        const argInput = args[0].toLowerCase();
+        if (argInput.includes("off") || argInput.includes("zoomoff")) {
+          disableZoom = true;
+        } else {
+          const match = argInput.match(/\d+/);
+          if (match) {
+            zoomPercent = parseInt(match[0], 10);
+            if (zoomPercent < 0) zoomPercent = 0;
+            if (zoomPercent > 80) zoomPercent = 80; // ক্রপ লিমিট বাউন্ডারি
+          }
+        }
+      }
+
+      // --- ডিরেক্টরি এবং ইমেজ লোডিং ---
+      const dir = path.join(__dirname, "cache");
+      await fs.ensureDir(dir);
+
+      const [mainImage, frameImage] = await Promise.all([
+        loadImage(userImageUrl),
+        loadImage(FRAME_URL)
+      ]);
+
+      // --- ক্যানভাস প্রসেসিং এবং রেন্ডারিং (১:১ স্কয়ার রেশিও) ---
+      const canvasSize = 1000;
+      const canvas = createCanvas(canvasSize, canvasSize);
+      const ctx = canvas.getContext("2d");
+
+      if (disableZoom) {
+        // সম্পূর্ণ ইউজার ইমেজটি কোন প্রকার জুম বা ক্রপ ছাড়া ফিট হবে
+        ctx.drawImage(mainImage, 0, 0, canvasSize, canvasSize);
+      } else {
+        // ম্যাথমেটিক্যাল ক্যালকুলেশন দিয়ে সেন্ট্রাল জুম ও ক্রপিং ট্র্যান্সফর্ম
+        const factor = zoomPercent / 100;
+        const cropWidth = mainImage.width * (1 - factor);
+        const cropHeight = mainImage.height * (1 - factor);
+        const cropX = (mainImage.width - cropWidth) / 2;
+        const cropY = (mainImage.height - cropHeight) / 2;
+
+        ctx.drawImage(
+          mainImage,
+          cropX, cropY, cropWidth, cropHeight, // সোর্স ডাইমেনশনস
+          0, 0, canvasSize, canvasSize        // ডেস্টিনেশন ক্যানভাস লেআউট
+        );
+      }
+
+      // ছবির ঠিক উপরে আলফা-মাস্কড ট্রান্সপারেন্ট ফ্রেম এবং লোগো লেয়ারটি ব্লেন্ড করা
+      ctx.drawImage(frameImage, 0, 0, canvasSize, canvasSize);
+
+      // --- বাফার এক্সপোর্ট এবং ফাইল রেসপন্স স্ট্রিম ---
+      const outPath = path.join(dir, `acs_output_${event.senderID}_${Date.now()}.png`);
+      const buffer = canvas.toBuffer("image/png");
+      await fs.writeFile(outPath, buffer);
+
+      const responseText = `✅ সফলভাবে ফ্রেম সেট করা হয়েছে!\n🔍 জুম স্ট্যাটাস: ${disableZoom ? 'বন্ধ (Off)' : zoomPercent + '%'}\n👑 Powered by ACS RAKIB`;
+
+      await message.reply(
+        {
+          body: responseText,
+          attachment: fs.createReadStream(outPath)
+        },
+        // Marry.js ফাইলের মতো নিখুঁতভাবে কলব্যাক ফাংশনে ক্যাশ ফাইলটি ডিলিট এবং মেমোরি রিলিজ করা
+        () => {
+          fs.unlink(outPath).catch(() => {});
+          canvas.width = canvas.height = 0;
+          if (global.gc) global.gc();
+        }
+      );
+
+    } catch (err) {
+      console.error("❌ ACS Command Error:", err);
+      return message.reply(`❌ ইমেজ জেনারেট করার সময় ব্যাকএন্ডে সমস্যা হয়েছে: ${err.message}`);
     }
+  }
 };
-      
+            
