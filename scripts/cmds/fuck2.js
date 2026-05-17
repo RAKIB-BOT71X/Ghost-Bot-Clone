@@ -10,7 +10,7 @@ module.exports = {
     version: "3.2",
     author: "Rakib Islam",
     countDown: 5,
-    role: 0,
+    role: 1,
     description: "Overlay two users’ avatars on another NSFW image template (fun only)",
     category: "fun",
   },
