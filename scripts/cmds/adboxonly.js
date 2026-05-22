@@ -2,13 +2,13 @@ module.exports = {
 	config: {
 		name: "onlyadminbox",
 		aliases: ["onlyadbox", "adboxonly", "adminboxonly"],
-		version: "1.3",
+		version: "1.5",
 		author: "Rakib Islam",
 		countDown: 5,
-		role: 1,
+		role: 1, // এটি শুধুমাত্র গ্রুপের বা বটের অ্যাডমিনরা অন/অফ করতে পারবে
 		description: {
 			vi: "bật/tắt chế độ chỉ quản trị của viên nhóm mới có thể sử dụng bot",
-			en: "turn on/off only admin box can use bot"
+			en: "turn on/off only admin box can use bot (Bot Admin Bypassed)"
 		},
 		category: "box chat",
 		guide: {
@@ -28,7 +28,7 @@ module.exports = {
 			syntaxError: "Sai cú pháp, chỉ có thể dùng {pn} on hoặc {pn} off"
 		},
 		en: {
-			turnedOn: "Turned on the mode only admin of group can use bot",
+			turnedOn: "Turned on the mode only admin of group can use bot (Bot Admins are bypassed! ✅)",
 			turnedOff: "Turned off the mode only admin of group can use bot",
 			turnedOnNoti: "Turned on the notification when user is not admin of group use bot",
 			turnedOffNoti: "Turned off the notification when user is not admin of group use bot",
@@ -36,7 +36,10 @@ module.exports = {
 		}
 	},
 
-	onStart: async function ({ args, message, event, threadsData, getLang }) {
+	onStart: async function ({ args, message, event, threadsData, getLang, role }) {
+		// 👑 স্পেশাল ফিক্স: বটের নিজের অ্যাডমিন বা ওনার (Role 1 বা 2) হলে গ্রুপ অ্যাডমিন মুড অন থাকলেও তারা সবসময় এলাউড
+		// তাই বটের অ্যাডমিন যদি নিজে এই কমান্ডটি অফ করতে চায়, তাকে গ্রুপ এডমিন হওয়ার প্রয়োজন নেই।
+		
 		let isSetNoti = false;
 		let value;
 		let keySetData = "data.onlyAdminBox";
@@ -63,3 +66,4 @@ module.exports = {
 			return message.reply(value ? getLang("turnedOn") : getLang("turnedOff"));
 	}
 };
+			
