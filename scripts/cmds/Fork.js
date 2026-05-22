@@ -14,18 +14,18 @@ module.exports = {
 
   langs: {
     en: {
-      current: "╭───────『 🌐 』───────╮\n\n    OFFICIAL GITHUB FORK \n\n  🔗 Link: %1\n  👤 Owner: 𝐌𝐀𝐌𝐔𝐍\n\n╰───────『 ✨ 』───────╯"
+      current: "╭───────『 🌐 』───────╮\n\n    OFFICIAL GITHUB FORK \n\n  🔗 Link: %1\n  👤 Owner: 🆁🅰🅺🅸🅱\n\n╰───────『 ✨ 』───────╯"
     }
   },
 
   onStart: async function ({ message, getLang }) {
-    const link = "https://github.com/MAMUN-GOAT-BOT/V2-.git";
+    const link = "FORK NAI🌚";
     return message.reply(getLang("current", link));
   },
 
   onChat: async function ({ message, getLang, event }) {
     if (event.body && event.body.toLowerCase() === "fork") {
-      const link = "https://github.com/MAMUN-GOAT-BOT/V2-.git";
+      const link = "FORK NAI🌚";
       return message.reply(getLang("current", link));
     }
   }
