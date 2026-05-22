@@ -1,274 +1,316 @@
-const axios = require('axios');
-const fs = require('fs-extra');
-const path = require('path');
+// Bangla-English Simi Bot for GoatBot
+// Author: Rakib Islam
+// Hosted on Replit — full lifetime use
 
-const BASE_API = "https://noobs-api.top/dipto";
-const LOCAL_QA_PATH = path.join(__dirname, "bbyLocalQA.json");
-const SETTINGS_PATH = path.join(process.cwd(), "data", "ghostSettings.json");
+const axios = require("axios");
 
-function loadSettings() {
-  if (!fs.existsSync(SETTINGS_PATH)) return {};
-  try { return fs.readJsonSync(SETTINGS_PATH); } catch { return {}; }
+// ===== REPLIT API URL =====
+// After publishing on Replit, replace the domain below with your .replit.app domain
+// Example: https://your-project.replit.app/api
+// For now using the dev domain — change to production domain after publishing
+const SIMI_API ="https://bangla-simi-bot--dxfrrrr.replit.app/api"; process.env.SIMI_API_URL || "https://7b44ba18-dc76-4943-b241-4b903b196b91-00-2bkd4n330lr73.sisko.replit.dev/api";
+
+const triggerWords = [
+  "baby", "bby", "babu", "bbu", "jan", "janu", "bot",
+  "জান", "জানু", "বেবি", "wifey", "hina", "hinata",
+];
+
+const randomGreetings = [
+  "Bolo baby 😊",
+  "I love you 💕",
+  "আমি তোমাকে ভালোবাসি 🥺",
+  "কি বলবা বলো 😊",
+  "হ্যাঁ বলো, শুনছি 🌸",
+  "Hmm? কিছু বলবা? 🤔",
+  "আরে ডাকলে কেন? 😅",
+  "কি হয়েছে? সব ঠিক আছে? 💙",
+  "Hehe, ki bolbe? 😄",
+  "আমি এখানে আছি 🤗",
+  "বলো কি মনে পড়লো আমার? 🙈",
+  "Ki chai tumi? 😏",
+  "আরে বাবা, ডাকলে কেন এত? 😂",
+  "Hmm, shunchi tomar kotha 👂",
+  "কথা বলো, চুপ থাকলে কেমনে বুঝবো? 😅",
+  "তোমার কথা শুনতে ভালো লাগে 😊",
+  "Ar dakas na, busy achi 😒",
+  "কি খাইলা আজকে? 🍽️",
+  "ভালো আছো তো? 💚",
+  "Tomar sate thakte chai ami 💕",
+  "babu khuda lagse 🥺",
+  "Hop beda 😾, Boss বল boss 😼",
+  "আমাকে ডাকলে, আমি কিন্তু কিস করে দেবো 😘",
+  "গোলাপ ফুলের জায়গায় আমি দিলাম তোমায় মেসেজ 🌹",
+  "বলো কি বলবা, সবার সামনে বলবা নাকি? 🤭🤏",
+  "𝗜 𝗹𝗼𝘃𝗲 𝘆𝗼𝐮__ 😘😘",
+  "Bby bolba pap hoibo 😒😒",
+  "বেশি bby করলে leave নিবো কিন্তু 😒😒",
+  "বেশি বেবি বললে কামুর দিমু 🤭🤭",
+  "আমাকে ডেকো না, আমি ব্যাস্ত আসি 🙆🏻‍♀",
+  "Hey Handsome বলো 😁😁",
+  "আরে Bolo আমার জান, কেমন আসো? 😚",
+  "একটা BF খুঁজে দাও 😿",
+  "oi mama ar dakis na pilis 😿",
+  "amr JaNu lagbe, Tumi ki single aso?",
+  "আমাকে না দেকে একটু পড়তেও বসতে তো পারো 🥺🥺",
+  "তোর বিয়ে হয় নি, Bby হইলো কিভাবে? 🙄",
+  "চৌধুরী সাহেব আমি গরিব হতে পারি 😾🤭 কিন্তু বড়লোক না 🥹😫",
+  "আমি অন্যের জিনিসের সাথে কথা বলি না 😏",
+  "ভুলে জাও আমাকে 😞😞",
+  "দেখা হলে কাঠগোলাপ দিও 🤗",
+  "আগে একটা গান বলো, ☹ নাহলে কথা বলবো না 🥺",
+  "বলো কি করতে পারি তোমার জন্য 😚",
+  "কথা দেও আমাকে পটাবা...!! 😌",
+  "বার বার Disturb করেছিস, আমার জানুর সাথে ব্যাস্ত আসি 😋",
+  "বার বার ডাকলে মাথা গরম হয় কিন্তু 😑😒",
+  "Bolo Babu, তুমি কি আমাকে ভালোবাসো? 🙈",
+  "আজকে আমার মন ভালো নেই 🙉",
+  "মন সুন্দর বানাও মুখের জন্য তো Snapchat আছেই! 🌚",
+  "Assalamualaikum 🐤🐤",
+  "আমি তোমার সিনিয়র আপু ওকে 😼 সম্মান দেও 🙁",
+  "খাওয়া দাওয়া করসো? 🙄",
+  "এত কাছেও এসো না, প্রেমে পরে যাবো তো 🙈",
+];
+
+async function getSimiResponse(text) {
+  try {
+    const res = await axios.post(`${SIMI_API}/simi/chat`, { text }, { timeout: 8000 });
+    return res.data.message || randomGreetings[Math.floor(Math.random() * randomGreetings.length)];
+  } catch {
+    return randomGreetings[Math.floor(Math.random() * randomGreetings.length)];
+  }
 }
 
-const DEFAULT_QA = {
-  "hello": ["Hello! 😊 Ki khobor?", "Hey! 👋 Kemon acho?", "Hi! Ami Ewr Hinata, tomar khadem! 😄"],
-  "hi": ["Hi! 👋 Kemon acho?", "Hello! 😊 Bolo ki dorkar!"],
-  "how are you": ["Ami valo achi! 💚 Tumi kemon?", "Ekdom jhakkas! 😎 Ki khobor?"],
-  "kemon acho": ["Ami valo achi! 😊 Tumi kemon?", "Ekdom mast! 🔥"],
-  "good morning": ["Good morning! ☀️ Sundor din katao!", "Morning! 🌞 Aj onek valo din hobe!"],
-  "good night": ["Good night! 🌙 Valo ghum hok!", "Sweet dreams! 😴✨"],
-  "bye": ["Bye bye! 👋😊 Valo theko!", "Alvida! 🌸 Take care!"],
-  "thanks": ["Welcome! 😊💚", "No problem! 🤙"],
-  "love you": ["Aww! Love you too! ❤️😊", "Tumi onek sundor bolo! 💖"],
-  "who are you": ["Ami Ewr Hinata! 🌸 Rakib Islam er toiri AI bot!", "Ghost Bot — Messenger er best bot! 💪🔥"],
-  "who made you": ["Rakib Islam amare toiri koreche! 👑😊", "Amar creator: Rakib Islam — Ghost Net admin!"],
-  "rakib": ["Haa! Rakib Islam amar boss! 👑😊", "Rakib Islam amar creator! 🔥"],
-  "ewr hinata": ["Ji! Ami Ewr Hinata! 🌸😊 Ki kora lagbe?", "Ewr Hinata — Messenger er best bot! 💪"],
-  "ghost bot": ["Ji! Ami Ewr Hinata (Ghost Bot)! 👻😊", "Ghost Bot — tomar khadem! 🔥"],
-  "ok": ["Ok! 👍", "Thik ache! ✅"],
-  "help": ["Ki help korbo? Bolo! 😊", "Ki dorkar? Ami achi! 💚"],
-  "sad": ["Dukhkhito hona! 🥺💚 Ki hoise?", "Sad keno? Bolo, ami achi! 😊"],
-  "happy": ["Yay! 🎉😊 Khushi thako!", "Happy thako shobkhon! 💚✨"],
-  "name": ["Amar name Ewr Hinata! 🌸", "Ami Ewr Hinata, tomar khadem! 😊"],
+module.exports.config = {
+  name: "bby",
+  aliases: ["baby", "bbu", "jan", "janu", "wifey", "bot", "hinata", "hina", "babu"],
+  version: "2.0",
+  author: "Rakib Islam",
+  countDown: 0,
+  role: 0,
+  description: "Bangla-English Simi bot — teach it, chat with it, use it in GC!",
+  category: "chat",
+  guide: {
+    en:
+      "{pn} [message] — chat with bot\n" +
+      "{pn} teach [question] - [reply1, reply2, ...] — teach bot\n" +
+      "{pn} list — all taught triggers\n" +
+      "{pn} list [question] — replies for a trigger\n" +
+      "{pn} remove [question] - [index] — remove a reply\n" +
+      "{pn} edit [question] - [index] - [new reply] — edit a reply\n" +
+      "{pn} teachers — top teacher leaderboard",
+  },
 };
 
-function loadLocalQA() {
-  if (!fs.existsSync(LOCAL_QA_PATH)) { fs.writeJsonSync(LOCAL_QA_PATH, DEFAULT_QA, { spaces: 2 }); }
-  const stored = fs.readJsonSync(LOCAL_QA_PATH);
-  return { ...DEFAULT_QA, ...stored };
-}
-function saveLocalQA(data) {
-  const current = fs.existsSync(LOCAL_QA_PATH) ? fs.readJsonSync(LOCAL_QA_PATH) : {};
-  fs.writeJsonSync(LOCAL_QA_PATH, { ...current, ...data }, { spaces: 2 });
-}
-function getLocalReply(text) {
-  const qa = loadLocalQA();
-  const t = text.toLowerCase().trim();
-  if (qa[t]) { const arr = qa[t]; return arr[Math.floor(Math.random() * arr.length)]; }
-  for (const key of Object.keys(qa)) {
-    if (t.includes(key) || key.includes(t)) { const arr = qa[key]; return arr[Math.floor(Math.random() * arr.length)]; }
-  }
-  return null;
-}
-async function getApiReply(text, uid) {
-  const res = await axios.get(`${BASE_API}/baby?text=${encodeURIComponent(text)}&senderID=${uid}&font=1`, { timeout: 8000 });
-  return res.data.reply;
-}
+module.exports.onStart = async ({ api, event, args, usersData }) => {
+  const uid = event.senderID;
+  const msg = args.join(" ").toLowerCase().trim();
 
-module.exports = {
-  config: {
-    name: "bby",
-    aliases: ["bbyhelp", "bbybot", "bbabe", "sam", "hinata", "chat"],
-    version: "9.0",
-    author: "Rakib Islam",
-    countDown: 0, role: 0,
-    description: "Ewr Hinata AI Chat — teach, learn, chat with full local Q&A",
-    category: "chat",
-    guide: {
-      en: [
-        "{pn} [message] — chat",
-        "{pn} on/off — toggle BBY mode (admin)",
-        "{pn} teach [msg] - [reply] — teach bot (API)",
-        "{pn} localteach [msg] - [reply] — teach bot (local)",
-        "{pn} remove [msg] — remove a teach",
-        "{pn} list — see stats",
-        "{pn} locallist — local Q&A count",
-        "{pn} msg [msg] — check replies for msg",
-        "{pn} howto — teaching guide",
-      ].join("\n")
-    }
-  },
-
-  onStart: async function ({ api, event, args, usersData }) {
-    const { threadID, messageID, senderID } = event;
-
-    // on/off toggle — admin only
-    if (args[0] === "on" || args[0] === "off") {
-      const adminBot = global.GoatBot?.config?.adminBot || [];
-      const threadData = global.db?.allThreadData?.find(t => t.threadID == threadID);
-      const adminIDs = (threadData?.adminIDs || []).map(a => a.adminID || a);
-      const isAdmin = adminBot.includes(senderID) || adminIDs.includes(senderID);
-      if (!isAdmin) return api.sendMessage("❌ শুধু Admin `.bby on/off` করতে পারবে!", threadID, messageID);
-      const s = loadSettings();
-      if (!s[threadID]) s[threadID] = {};
-      s[threadID].bbyEnabled = args[0] === "on";
-      fs.ensureDirSync(path.dirname(SETTINGS_PATH));
-      fs.writeJsonSync(SETTINGS_PATH, s, { spaces: 2 });
-      return api.sendMessage(
-        args[0] === "on"
-          ? "✅ BBY Mode ON! 😊\nBot এখন chat reply দেবে!\n🌸 Ewr Hinata"
-          : "🔇 BBY Mode OFF!\nBot আর reply দেবে না।\n🌸 Ewr Hinata",
-        threadID, messageID
-      );
-    }
-
-    // BBY enabled check
-    try {
-      const s = loadSettings();
-      if (s[threadID]?.bbyEnabled === false) return;
-    } catch {}
-
-    const dipto = args.join(" ").toLowerCase().trim();
-    const uid = senderID;
-
+  try {
     if (!args[0]) {
-      const ran = ["Bolo bby 😊", "Ji bolo!", "Ami achi! 🌸", "Ki korbo?", "Bolo jaan!"];
-      return api.sendMessage(ran[Math.floor(Math.random() * ran.length)], threadID, messageID);
+      const reply = randomGreetings[Math.floor(Math.random() * randomGreetings.length)];
+      return api.sendMessage(reply, event.threadID, event.messageID);
     }
 
-    if (args[0] === "howto") {
+    // ── TEACH ─────────────────────────────────────────────────────────────
+    if (args[0] === "teach") {
+      const rest = args.slice(1).join(" ");
+      const dashIdx = rest.indexOf(" - ");
+      if (dashIdx === -1)
+        return api.sendMessage(
+          "❌ Format: bby teach [question] - [reply1, reply2, ...]",
+          event.threadID,
+          event.messageID
+        );
+
+      const trigger = rest.slice(0, dashIdx).trim();
+      const responses = rest.slice(dashIdx + 3).trim();
+      if (!trigger || !responses)
+        return api.sendMessage(
+          "❌ Format: bby teach [question] - [reply1, reply2, ...]",
+          event.threadID,
+          event.messageID
+        );
+
+      const userName = (await usersData.getName(uid)) || "Unknown";
+      const res = await axios.post(`${SIMI_API}/simi/teach`, {
+        trigger,
+        responses,
+        userID: uid,
+        userName,
+      }, { timeout: 8000 });
       return api.sendMessage(
-        `🌸 Ewr Hinata — BBY Teaching Guide\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `📌 TEACH (API):\n.bby teach hello - Hi there!\n\n` +
-        `📌 LOCAL TEACH:\n.bby localteach সালাম - ওয়ালাইকুম!\n\n` +
-        `📌 REACTION:\n.bby teach react good morning - 🌅,😊\n\n` +
-        `📌 REMOVE:\n.bby remove [message]\n\n` +
-        `📌 CHECK:\n.bby msg [message]\n.bby list\n.bby locallist\n` +
-        `━━━━━━━━━━━━━━━━━━━━\n` +
-        `👑 Owner: Rakib Islam | Ewr Hinata`,
-        threadID, messageID
+        `${res.data.message}\n• 𝗧𝗿𝗶𝗴𝗴𝗲𝗿: "${trigger}"\n• 𝗧𝗲𝗮𝗰𝗵𝗲𝗿: ${userName}\n• 𝗧𝗼𝘁𝗮𝗹 𝗿𝗲𝗽𝗹𝗶𝗲𝘀: ${res.data.count}`,
+        event.threadID,
+        event.messageID
       );
     }
 
-    if (args[0] === "localteach") {
-      const [comd, rep] = dipto.replace("localteach ", "").split(/\s*-\s*/);
-      if (!comd || !rep) return api.sendMessage("❌ Format: .bby localteach [msg] - [reply1],[reply2]", threadID, messageID);
-      const replies = rep.split(",").map(r => r.trim()).filter(r => r);
-      const qa = {}; qa[comd.trim()] = replies;
-      saveLocalQA(qa);
-      return api.sendMessage(`✅ Local Q&A তে শেখানো হয়েছে!\n"${comd.trim()}" → ${replies.join(", ")}`, threadID, messageID);
-    }
-
-    if (args[0] === "locallist") {
-      const qa = loadLocalQA();
-      return api.sendMessage(`📊 Local Q&A: ${Object.keys(qa).length} entries\n.bby localteach দিয়ে আরো শেখাও!`, threadID, messageID);
-    }
-
-    if (args[0] === "remove") {
-      const fina = dipto.replace("remove ", "");
-      try {
-        const dat = (await axios.get(`${BASE_API}/baby?remove=${encodeURIComponent(fina)}&senderID=${uid}`, { timeout: 8000 })).data.message;
-        return api.sendMessage(dat, threadID, messageID);
-      } catch { return api.sendMessage("❌ Remove failed.", threadID, messageID); }
-    }
-
+    // ── LIST ──────────────────────────────────────────────────────────────
     if (args[0] === "list") {
-      try {
-        const d = (await axios.get(`${BASE_API}/baby?list=all`, { timeout: 8000 })).data;
-        const qa = loadLocalQA();
-        return api.sendMessage(`📊 BBY Stats\nAPI Teaches: ${d.length||"offline"}\nLocal Q&A: ${Object.keys(qa).length} entries`, threadID, messageID);
-      } catch {
-        const qa = loadLocalQA();
-        return api.sendMessage(`📊 Local Q&A: ${Object.keys(qa).length} entries (API offline)`, threadID, messageID);
+      const trigger = args.slice(1).join(" ").trim();
+      const url = trigger
+        ? `${SIMI_API}/simi/list?trigger=${encodeURIComponent(trigger)}`
+        : `${SIMI_API}/simi/list`;
+      const res = await axios.get(url, { timeout: 8000 });
+      return api.sendMessage(res.data.message, event.threadID, event.messageID);
+    }
+
+    // ── TEACHERS ──────────────────────────────────────────────────────────
+    if (args[0] === "teachers" || args[0] === "teacher") {
+      const res = await axios.get(`${SIMI_API}/simi/teachers`, { timeout: 8000 });
+      return api.sendMessage(res.data.message, event.threadID, event.messageID);
+    }
+
+    // ── REMOVE ────────────────────────────────────────────────────────────
+    if (args[0] === "remove" || args[0] === "rm") {
+      const rest = args.slice(1).join(" ");
+      const dashIdx = rest.indexOf(" - ");
+      if (dashIdx === -1)
+        return api.sendMessage(
+          "❌ Format: bby remove [question] - [index]",
+          event.threadID,
+          event.messageID
+        );
+
+      const trigger = rest.slice(0, dashIdx).trim();
+      const index = parseInt(rest.slice(dashIdx + 3).trim(), 10);
+      if (!trigger || isNaN(index))
+        return api.sendMessage(
+          "❌ Format: bby remove [question] - [index]",
+          event.threadID,
+          event.messageID
+        );
+
+      const res = await axios.delete(`${SIMI_API}/simi/remove`, {
+        data: { trigger, index },
+        timeout: 8000,
+      });
+      return api.sendMessage(res.data.message, event.threadID, event.messageID);
+    }
+
+    // ── EDIT ──────────────────────────────────────────────────────────────
+    if (args[0] === "edit") {
+      const rest = args.slice(1).join(" ");
+      const parts = rest.split(" - ");
+      if (parts.length < 3)
+        return api.sendMessage(
+          "❌ Format: bby edit [question] - [index] - [new reply]",
+          event.threadID,
+          event.messageID
+        );
+
+      const trigger = parts[0].trim();
+      const index = parseInt(parts[1].trim(), 10);
+      const newResponse = parts.slice(2).join(" - ").trim();
+      if (!trigger || isNaN(index) || !newResponse)
+        return api.sendMessage(
+          "❌ Format: bby edit [question] - [index] - [new reply]",
+          event.threadID,
+          event.messageID
+        );
+
+      const res = await axios.put(`${SIMI_API}/simi/edit`, {
+        trigger,
+        index,
+        newResponse,
+      }, { timeout: 8000 });
+      return api.sendMessage(res.data.message, event.threadID, event.messageID);
+    }
+
+    // ── CHAT ──────────────────────────────────────────────────────────────
+    const botReply = await getSimiResponse(msg);
+    api.sendMessage(botReply, event.threadID, (err, info) => {
+      if (!err) {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: module.exports.config.name,
+          type: "reply",
+          messageID: info.messageID,
+          author: uid,
+          text: botReply,
+        });
+      }
+    }, event.messageID);
+
+  } catch (err) {
+    api.sendMessage(
+      `❌ Error: ${err.response?.data?.error || err.message}`,
+      event.threadID,
+      event.messageID
+    );
+  }
+};
+
+module.exports.onReply = async ({ api, event }) => {
+  if (event.type !== "message_reply") return;
+  try {
+    const text = (event.body || "").toLowerCase().trim() || "হ্যালো";
+    const botReply = await getSimiResponse(text);
+    api.sendMessage(botReply, event.threadID, (err, info) => {
+      if (!err) {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: module.exports.config.name,
+          type: "reply",
+          messageID: info.messageID,
+          author: event.senderID,
+          text: botReply,
+        });
+      }
+    }, event.messageID);
+  } catch (err) {
+    // silent fail on reply errors
+  }
+};
+
+module.exports.onChat = async ({ api, event }) => {
+  try {
+    const message = (event.body || "").toLowerCase().trim();
+    if (!message) return;
+    if (event.type === "message_reply") return;
+
+    const triggered = triggerWords.some((w) => message.startsWith(w));
+    if (!triggered) return;
+
+    api.setMessageReaction("🪽", event.messageID, () => {}, true);
+
+    // Strip the trigger word from the start
+    let userText = message;
+    for (const prefix of triggerWords) {
+      if (message.startsWith(prefix)) {
+        userText = message.slice(prefix.length).trim();
+        break;
       }
     }
 
-    if (args[0] === "msg") {
-      const fuk = dipto.replace("msg ", "");
-      try {
-        const d = (await axios.get(`${BASE_API}/baby?list=${encodeURIComponent(fuk)}`, { timeout: 8000 })).data.data;
-        const local = loadLocalQA()[fuk] ? `\nLocal: ${loadLocalQA()[fuk].join(", ")}` : "";
-        return api.sendMessage(`Replies for "${fuk}":\n${d}${local}`, threadID, messageID);
-      } catch {
-        const local = loadLocalQA()[fuk];
-        if (local) return api.sendMessage(`Local: ${local.join(", ")}`, threadID, messageID);
-        return api.sendMessage("❌ Not found.", threadID, messageID);
+    // If no text after trigger word — send random greeting
+    if (!userText) {
+      const greeting = randomGreetings[Math.floor(Math.random() * randomGreetings.length)];
+      api.sendMessage(greeting, event.threadID, (err, info) => {
+        if (!err) {
+          global.GoatBot.onReply.set(info.messageID, {
+            commandName: module.exports.config.name,
+            type: "reply",
+            messageID: info.messageID,
+            author: event.senderID,
+            text: greeting,
+          });
+        }
+      }, event.messageID);
+      return;
+    }
+
+    const botReply = await getSimiResponse(userText);
+    api.sendMessage(botReply, event.threadID, (err, info) => {
+      if (!err) {
+        global.GoatBot.onReply.set(info.messageID, {
+          commandName: module.exports.config.name,
+          type: "reply",
+          messageID: info.messageID,
+          author: event.senderID,
+          text: botReply,
+        });
       }
-    }
-
-    if (args[0] === "teach" && args[1] !== "react") {
-      const [comd, command] = dipto.replace(/^teach\s+/, "").split(/\s*-\s*/);
-      if (!command || command.length < 1) return api.sendMessage("❌ Format: .bby teach [msg] - [reply]\n.bby howto", threadID, messageID);
-      try {
-        const re = await axios.get(`${BASE_API}/baby?teach=${encodeURIComponent(comd.trim())}&reply=${encodeURIComponent(command)}&senderID=${uid}`, { timeout: 8000 });
-        return api.sendMessage(`✅ শেখানো হয়েছে!\n"${comd.trim()}" → ${re.data.message}\nTeaches: ${re.data.teachs||"?"}`, threadID, messageID);
-      } catch { return api.sendMessage("❌ API failed. Try .bby localteach!", threadID, messageID); }
-    }
-
-    if (args[0] === "teach" && args[1] === "react") {
-      const [comd, command] = dipto.split(/\s*-\s*/);
-      const final = comd.replace("teach react ", "").trim();
-      if (!command) return api.sendMessage("❌ .bby teach react [msg] - 😍,😂", threadID, messageID);
-      try {
-        const tex = (await axios.get(`${BASE_API}/baby?teach=${encodeURIComponent(final)}&react=${encodeURIComponent(command)}`, { timeout: 8000 })).data.message;
-        return api.sendMessage(`✅ Reaction শেখানো: ${tex}`, threadID, messageID);
-      } catch { return api.sendMessage("❌ React teach failed.", threadID, messageID); }
-    }
-
-    const localReply = getLocalReply(dipto);
-    if (localReply) {
-      return api.sendMessage(localReply, threadID, (err, info) => {
-        if (!info) return;
-        global.GoatBot.onReply.set(info.messageID, { commandName: "bby", type: "reply", messageID: info.messageID, author: senderID });
-      }, messageID);
-    }
-
-    try {
-      const d = await getApiReply(dipto, uid);
-      api.sendMessage(d || "Bolo bby 😊", threadID, (err, info) => {
-        if (!info) return;
-        global.GoatBot.onReply.set(info.messageID, { commandName: "bby", type: "reply", messageID: info.messageID, author: senderID });
-      }, messageID);
-    } catch {
-      const fallbacks = ["API offline! 😅 Try again!", "Network error! 😊", "Bolo bolo! 🌸"];
-      api.sendMessage(fallbacks[Math.floor(Math.random() * fallbacks.length)], threadID, messageID);
-    }
-  },
-
-  onReply: async function ({ api, event, Reply }) {
-    if (api.getCurrentUserID() === event.senderID) return;
-    const { threadID, messageID, senderID, body } = event;
-    const text = body?.toLowerCase()?.trim() || "";
-    const local = getLocalReply(text);
-    if (local) {
-      return api.sendMessage(local, threadID, (err, info) => {
-        if (!info) return;
-        global.GoatBot.onReply.set(info.messageID, { commandName: "bby", type: "reply", messageID: info.messageID, author: senderID });
-      }, messageID);
-    }
-    try {
-      const a = (await axios.get(`${BASE_API}/baby?text=${encodeURIComponent(text)}&senderID=${senderID}&font=1`, { timeout: 8000 })).data.reply;
-      api.sendMessage(a || "😊", threadID, (err, info) => {
-        if (!info) return;
-        global.GoatBot.onReply.set(info.messageID, { commandName: "bby", type: "reply", messageID: info.messageID, author: senderID });
-      }, messageID);
-    } catch { api.sendMessage("😊", threadID, messageID); }
-  },
-
-  onChat: async function ({ api, event }) {
-    const { threadID, messageID, senderID, body } = event;
-    if (!body) return;
-    try {
-      const s = loadSettings();
-      if (s[threadID]?.bbyEnabled === false) return;
-    } catch {}
-    const text = body.toLowerCase().trim();
-    const triggers = ["bby ", "hinata ", "bot ", "jan ", "babu ", "janu "];
-    const matched = triggers.find(t => text.startsWith(t));
-    if (!matched) return;
-    const arr = text.replace(matched, "").trim();
-    if (!arr) {
-      const ran = ["Ji! 😊", "Bolo!", "Ami achi! 🌸", "Ki korbo?"];
-      return api.sendMessage(ran[Math.floor(Math.random() * ran.length)], threadID, (err, info) => {
-        if (!info) return;
-        global.GoatBot.onReply.set(info.messageID, { commandName: "bby", type: "reply", messageID: info.messageID, author: senderID });
-      }, messageID);
-    }
-    const local = getLocalReply(arr);
-    if (local) {
-      return api.sendMessage(local, threadID, (err, info) => {
-        if (!info) return;
-        global.GoatBot.onReply.set(info.messageID, { commandName: "bby", type: "reply", messageID: info.messageID, author: senderID });
-      }, messageID);
-    }
-    try {
-      const a = (await axios.get(`${BASE_API}/baby?text=${encodeURIComponent(arr)}&senderID=${senderID}&font=1`, { timeout: 8000 })).data.reply;
-      api.sendMessage(a || "😊 Bolo!", threadID, (err, info) => {
-        if (!info) return;
-        global.GoatBot.onReply.set(info.messageID, { commandName: "bby", type: "reply", messageID: info.messageID, author: senderID });
-      }, messageID);
-    } catch {}
+    }, event.messageID);
+  } catch (err) {
+    // silent fail on chat trigger errors
   }
 };
