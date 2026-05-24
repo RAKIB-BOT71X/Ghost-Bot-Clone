@@ -1,11 +1,7 @@
 const axios = require('axios');
 const fs = require('fs-extra'); 
 const path = require('path');
-const stream = require('stream');
-const { promisify } = require('util');
 
-const pipeline = promisify(stream.pipeline);
-const API_ENDPOINT = "https://free-goat-api.onrender.com/4k"; 
 const CACHE_DIR = path.join(__dirname, 'cache');
 
 function extractImageUrl(args, event) {
@@ -24,90 +20,67 @@ module.exports = {
   config: {
     name: "4k",
     aliases: ["upscale", "hd", "enhance"],
-    version: "1.0",
-    author: "Rakib Islam",
+    version: "2.0",
+    author: "Rakibul Hasan", // আপনার ডেভেলপার সিগনেচার
     countDown: 15,
     role: 0,
-    longDescription: "Upscales an image to higher resolution (simulated 4K) using AI.",
+    longDescription: "Upscales an image to higher resolution (4K) using ACS RAKIB'S API Hub.",
     category: "image",
     guide: {
-      en: 
-        "{pn} <image_url> OR reply to an image.\n\n" +
-        "• Example: {pn} https://example.com/lowres.jpg"
+      en: "{pn} <image_url> OR reply to an image.\n\n• Example: {pn} (reply to a photo)"
     }
   },
 
   onStart: async function ({ args, message, event }) {
-    
-    // Get the image URL from arguments or a replied message
+    // ১. ইউজার লিঙ্ক দিয়েছে নাকি ছবিতে রিপ্লাই করেছে তা চেক করা
     const imageUrl = extractImageUrl(args, event);
 
     if (!imageUrl) {
       return message.reply("❌ Please provide an image URL or reply to an image to upscale.");
     }
 
+    // cache ফোল্ডার না থাকলে তৈরি করা
     if (!fs.existsSync(CACHE_DIR)) {
         fs.mkdirSync(CACHE_DIR, { recursive: true });
     }
 
+    // লোডিং রিয়্যাকশন (⏳) দেওয়া
     message.reaction("⏳", event.messageID);
     let tempFilePath; 
 
     try {
-      // 1. Construct the API URL
-      const fullApiUrl = `${API_ENDPOINT}?url=${encodeURIComponent(imageUrl)}`;
+      // 🚀 আপনার নিজস্ব প্রিমিয়াম সাইবারপাংক এপিআই হাবের ইউআরএল
+      const apiHubUrl = `https://cyberpunk-api-hub--explainrhk.replit.app/api/4k?url=${encodeURIComponent(imageUrl)}`;
       
-      // 2. Call the API to get the upscaled image URL
-      const apiResponse = await axios.get(fullApiUrl, { timeout: 45000 });
-      const data = apiResponse.data;
-
-      if (!data.image) {
-        throw new Error("API returned success but missing final image URL.");
-      }
-
-      const upscaledImageUrl = data.image;
-
-      // 3. Download the upscaled image stream
-      const imageDownloadResponse = await axios.get(upscaledImageUrl, {
-          responseType: 'stream',
-          timeout: 60000,
+      // ২. সরাসরি আপনার এপিআই হাব থেকে ইমেজ বাফার স্ট্রিম ডাউনলোড করা
+      const response = await axios.get(apiHubUrl, {
+          responseType: 'arraybuffer', // ইমেজ বাফার ক্যাচ করার জন্য
+          timeout: 60000
       });
-      
-      // 4. Save the stream to a temporary file
+
+      // ৩. বাফার ফাইলটি টেম্পোরারি সেভ করা
       const fileHash = Date.now() + Math.random().toString(36).substring(2, 8);
       tempFilePath = path.join(CACHE_DIR, `upscale_4k_${fileHash}.jpg`);
       
-      await pipeline(imageDownloadResponse.data, fs.createWriteStream(tempFilePath));
+      await fs.writeFile(tempFilePath, Buffer.from(response.data));
 
+      // ✅ সফল হলে রিয়্যাকশন দেওয়া
       message.reaction("✅", event.messageID);
       
-      // 5. Reply with the final image
+      // ৪. চ্যাটে ৪কে এইচডি ছবি দিয়ে রিপ্লাই করা
       await message.reply({
-        body: `🖼️ Image successfully upscaled to 4K!`,
+        body: `🖼️ Image successfully upscaled to 4K by ACS Hub!`,
         attachment: fs.createReadStream(tempFilePath)
       });
 
     } catch (error) {
+      // ❌ এরর হলে ক্রস রিয়্যাকশন দেওয়া
       message.reaction("❌", event.messageID);
-      
-      let errorMessage = "❌ Failed to upscale image. An error occurred.";
-      if (error.response) {
-         if (error.response.status === 400) {
-             errorMessage = `❌ Error 400: The provided URL might be invalid or the image is too small/large.`;
-         } else {
-             errorMessage = `❌ HTTP Error ${error.response.status}. The API may be unavailable.`;
-         }
-      } else if (error.message.includes('timeout')) {
-         errorMessage = `❌ Request timed out (API response too slow).`;
-      } else if (error.message) {
-         errorMessage = `❌ ${error.message}`;
-      }
-
-      console.error("4K Upscale Command Error:", error);
-      message.reply(errorMessage);
+      console.error("4K Upscale Error:", error);
+      message.reply("❌ Failed to upscale image. Your API server might be sleeping or rate-limited.");
 
     } finally {
-      // Clean up the temporary file
+      // ৫. কাজ শেষে ক্যাশ ফাইল ডিলিট করা (যাতে বটের স্টোরেজ ফুল না হয়)
       if (tempFilePath && fs.existsSync(tempFilePath)) {
           fs.unlinkSync(tempFilePath);
       }
