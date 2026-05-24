@@ -12,7 +12,7 @@
   "checkApproval": false,
   "language": "en",
   "nickNameBot": "Éw'r Hinata",
-  "prefix": ".",
+  "prefix": "!",
   "adminOnly": {
     "enable": false,
     "ignoreCommand": []
