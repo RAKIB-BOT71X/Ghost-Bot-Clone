@@ -1,65 +1,43 @@
 const axios = require("axios");
-const fs = require("fs-extra");
-const FormData = require("form-data");
-const path = require("path");
-
-async function getUploadApiUrl() {
-  try {
-    const res = await axios.get("https://raw.githubusercontent.com/Ayan-alt-deep/xyc/main/baseApiurl.json");
-    return res.data.catbox || "https://catbox.moe/user/api.php";
-  } catch {
-    return "https://catbox.moe/user/api.php";
-  }
-}
 
 async function handleCatboxUpload({ event, api, message }) {
   const { messageReply, messageID } = event;
+  
+  // ১. ইউজার কোনো ছবি বা ভিডিওতে রিপ্লাই করেছে কি না চেক করা
   if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
     return message.reply("Please reply to an image or video.");
   }
 
+  // ২. ফেসবুকের ওই মিডিয়া ফাইলের লিঙ্কটি নেওয়া
   const fileUrl = messageReply.attachments[0].url;
-  const ext = messageReply.attachments[0].type === "photo" ? ".jpg" : ".mp4";
-  const filePath = path.join(__dirname, "temp" + ext);
 
-  // React with 🕛 during upload
+  // ৩. লোডিং রিয়্যাকশন (🕛) দেওয়া এবং মেসেজ পাঠানো
   api.setMessageReaction("🕛", messageID, () => {}, true);
-  const loading = await message.reply("⏳ Meow~ Uploading your media to the magical Catbox...");
+  const loading = await message.reply("⏳ Meow~ Uploading your media via ACS RAKIB'S API Hub...");
 
+  // ৫ সেকেন্ড পর লোডিং মেসেজটি স্ক্রিন থেকে মুছে ফেলা
   setTimeout(() => {
     api.unsendMessage(loading.messageID);
   }, 5000);
 
   try {
-    const uploadApiUrl = await getUploadApiUrl();
+    // 🚀 আপনার নিজস্ব প্রিমিয়াম সাইবারপাংক এপিআই হাবের লিঙ্ক
+    const apiHubUrl = `https://cyberpunk-api-hub--explainrhk.replit.app/api/catbox?url=${encodeURIComponent(fileUrl)}`;
 
-    const response = await axios.get(fileUrl, { responseType: "stream" });
-    const writer = fs.createWriteStream(filePath);
-    response.data.pipe(writer);
+    // ৪. আপনার এপিআই সার্ভারে ফাইল লিঙ্কটি পাঠানো
+    const response = await axios.get(apiHubUrl);
+    
+    // এপিআই থেকে সরাসরি তৈরি হওয়া ক্যাটবক্স লিঙ্কটি নেওয়া
+    const permanentLink = response.data;
 
-    await new Promise((resolve, reject) => {
-      writer.on("finish", resolve);
-      writer.on("error", reject);
-    });
-
-    const form = new FormData();
-    form.append("reqtype", "fileupload");
-    form.append("fileToUpload", fs.createReadStream(filePath));
-
-    const upload = await axios.post(uploadApiUrl, form, {
-      headers: form.getHeaders(),
-    });
-
-    fs.unlinkSync(filePath);
-
-    // ✅ React on success
+    // ✅ কাজ সফল হলে গ্রিন টিক (✅) রিয়্যাকশন দেওয়া এবং লিঙ্কটি বটের চ্যাটে পাঠানো
     api.setMessageReaction("✅", messageID, () => {}, true);
-    return message.reply(upload.data);
+    return message.reply(permanentLink);
+
   } catch (err) {
-    fs.existsSync(filePath) && fs.unlinkSync(filePath);
-    // ❌ React on failure
+    // ❌ কোনো কারণে ফেইল হলে ক্রস (❌) রিয়্যাকশন ও এরর মেসেজ দেওয়া
     api.setMessageReaction("❌", messageID, () => {}, true);
-    return message.reply("❌ Failed to upload to Catbox.");
+    return message.reply("❌ Failed to upload via API Hub. Please check your server status.");
   }
 }
 
@@ -67,12 +45,12 @@ module.exports = {
   config: {
     name: "catbox",
     aliases: ["ct"],
-    version: "1.3",
-    author: "MaHU",
+    version: "2.0",
+    author: "Rakibul Hasan", // আপনার ডেভেলপার সিগনেচার
     countDown: 5,
     role: 0,
-    shortDescription: "Upload media to catbox.moe",
-    longDescription: "Upload replied image or video to catbox.moe and get link",
+    shortDescription: "Upload media via ACS Rakib API Hub",
+    longDescription: "Upload replied image or video to catbox using secure premium API Hub.",
     category: "tools",
     guide: {
       en: "{pn} (reply to image/video)"
