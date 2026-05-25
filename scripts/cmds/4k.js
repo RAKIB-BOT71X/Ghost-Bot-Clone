@@ -19,71 +19,79 @@ function extractImageUrl(args, event) {
 module.exports = {
   config: {
     name: "4k",
-    aliases: ["upscale", "hd", "enhance"],
-    version: "2.0",
-    author: "Rakibul Hasan", // আপনার ডেভেলপার সিগনেচার
-    countDown: 15,
+    aliases: ["hd", "upscale"],
+    version: "5.0",
+    author: "Rakibul Hasan",
+    countDown: 10,
     role: 0,
-    longDescription: "Upscales an image to higher resolution (4K) using ACS RAKIB'S API Hub.",
+    shortDescription: "Multi-API Auto Fallback 4K Upscaler",
     category: "image",
-    guide: {
-      en: "{pn} <image_url> OR reply to an image.\n\n• Example: {pn} (reply to a photo)"
-    }
+    guide: { en: "{pn} (reply to an image)" }
   },
 
   onStart: async function ({ args, message, event }) {
-    // ১. ইউজার লিঙ্ক দিয়েছে নাকি ছবিতে রিপ্লাই করেছে তা চেক করা
     const imageUrl = extractImageUrl(args, event);
 
     if (!imageUrl) {
-      return message.reply("❌ Please provide an image URL or reply to an image to upscale.");
+      return message.reply("❌ Please reply to an image to upscale.");
     }
 
-    // cache ফোল্ডার না থাকলে তৈরি করা
     if (!fs.existsSync(CACHE_DIR)) {
         fs.mkdirSync(CACHE_DIR, { recursive: true });
     }
 
-    // লোডিং রিয়্যাকশন (⏳) দেওয়া
     message.reaction("⏳", event.messageID);
     let tempFilePath; 
+    let response;
+
+    // 🚀 ৩টি ভিন্ন ভিন্ন ফ্রি এপিআই দিয়ে ট্রাই করার মেকানিজম
+    try {
+        // প্রথম ট্রাই: এপিআই ১ (ফাস্ট অ্যান্ড ক্লিয়ার)
+        const api1 = `https://smfahim.xyz/api/tools/upscale?url=${encodeURIComponent(imageUrl)}`;
+        response = await axios.get(api1, { responseType: 'arraybuffer', timeout: 25000 });
+    } catch (err) {
+        try {
+            console.log("API 1 failed, trying API 2...");
+            // দ্বিতীয় ট্রাই: এপিআই ২ (অ্যানিমে ও ফটোর জন্য জোস)
+            const api2 = `https://api.sandipbaruwal.codes/upscale?url=${encodeURIComponent(imageUrl)}`;
+            response = await axios.get(api2, { responseType: 'arraybuffer', timeout: 25000 });
+        } catch (err2) {
+            try {
+                console.log("API 2 failed, trying API 3...");
+                // তৃতীয় ট্রাই: এapi ৩ (ব্যাকআপ রুট)
+                const api3 = `https://shuddho-api.onrender.com/api/upscale?url=${encodeURIComponent(imageUrl)}`;
+                response = await axios.get(api3, { responseType: 'arraybuffer', timeout: 25000 });
+            } catch (err3) {
+                response = null;
+            }
+        }
+    }
+
+    // যদি সব এপিআই-ই ফেইল করে
+    if (!response || !response.data) {
+        message.reaction("❌", event.messageID);
+        return message.reply("❌ All premium scaling servers are currently busy. Please try again after a minute!");
+    }
 
     try {
-      // 🚀 আপনার নিজস্ব প্রিমিয়াম সাইবারপাংক এপিআই হাবের ইউআরএল
-      const apiHubUrl = `https://cyberpunk-api-hub--explainrhk.replit.app/api/4k?url=${encodeURIComponent(imageUrl)}`;
-      
-      // ২. সরাসরি আপনার এপিআই হাব থেকে ইমেজ বাফার স্ট্রিম ডাউনলোড করা
-      const response = await axios.get(apiHubUrl, {
-          responseType: 'arraybuffer', // ইমেজ বাফার ক্যাচ করার জন্য
-          timeout: 60000
-      });
-
-      // ৩. বাফার ফাইলটি টেম্পোরারি সেভ করা
-      const fileHash = Date.now() + Math.random().toString(36).substring(2, 8);
-      tempFilePath = path.join(CACHE_DIR, `upscale_4k_${fileHash}.jpg`);
+      const fileHash = Date.now();
+      tempFilePath = path.join(CACHE_DIR, `4k_${fileHash}.jpg`);
       
       await fs.writeFile(tempFilePath, Buffer.from(response.data));
-
-      // ✅ সফল হলে রিয়্যাকশন দেওয়া
       message.reaction("✅", event.messageID);
       
-      // ৪. চ্যাটে ৪কে এইচডি ছবি দিয়ে রিপ্লাই করা
       await message.reply({
-        body: `🖼️ Image successfully upscaled to 4K by ACS Hub!`,
+        body: `🖼️ Image upscaled to 4K Quality!`,
         attachment: fs.createReadStream(tempFilePath)
       });
-
     } catch (error) {
-      // ❌ এরর হলে ক্রস রিয়্যাকশন দেওয়া
       message.reaction("❌", event.messageID);
-      console.error("4K Upscale Error:", error);
-      message.reply("❌ Failed to upscale image. Your API server might be sleeping or rate-limited.");
-
+      message.reply("❌ Error sending upscaled attachment.");
     } finally {
-      // ৫. কাজ শেষে ক্যাশ ফাইল ডিলিট করা (যাতে বটের স্টোরেজ ফুল না হয়)
       if (tempFilePath && fs.existsSync(tempFilePath)) {
           fs.unlinkSync(tempFilePath);
       }
     }
   }
 };
+      
