@@ -9,8 +9,8 @@ const mahmud = async () => {
 
 module.exports = {
         config: {
-                name: "pin",
-                aliases: ["pinterest", "pic"],
+                name: "rr",
+                aliases: ["pinterest","pic","rr","mira"],
                 version: "1.7",
                 author: "MahMUD",
                 countDown: 10,
